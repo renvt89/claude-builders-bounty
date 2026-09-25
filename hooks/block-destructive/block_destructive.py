@@ -2,8 +2,8 @@
 """
 Claude Code PreToolUse hook — blocks destructive Bash commands before they run.
 
-Blocked patterns: rm -rf, DROP TABLE, git push --force, TRUNCATE,
-DELETE FROM without a WHERE clause.
+Blocked patterns: rm -rf (and -fr/-Rf variants), DROP TABLE, git push --force
+(and -f / --force-with-lease), TRUNCATE, DELETE FROM without a WHERE clause.
 
 Reads the PreToolUse JSON event on stdin and prints a decision on stdout.
 """
@@ -17,9 +17,10 @@ LOG_PATH = os.path.expanduser("~/.claude/hooks/blocked.log")
 
 # (regex, human label). Order matters — first match wins.
 DANGEROUS = [
-    (r"\brm\s+-rf\b", "recursive force delete (rm -rf)"),
+    (r"\brm\s+-[a-zA-Z]*[rR][a-zA-Z]*[fF][a-zA-Z]*\b", "recursive force delete (rm -rf/-fr)"),
+    (r"\brm\s+-[a-zA-Z]*[fF][a-zA-Z]*[rR][a-zA-Z]*\b", "recursive force delete (rm -fr/-rf)"),
     (r"\bDROP\s+TABLE\b", "SQL DROP TABLE"),
-    (r"\bgit\s+push\b[^\n]*--force", "git force push"),
+    (r"\bgit\s+push\b[^\n]*(?:--force-with-lease|--force|-f\b)", "git force push"),
     (r"\bTRUNCATE\b", "SQL TRUNCATE"),
     (r"\bDELETE\s+FROM\b(?![\s\S]*\bWHERE\b)", "DELETE FROM without a WHERE clause"),
 ]
